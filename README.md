@@ -2,7 +2,7 @@
 
 An interactive 3D tulip garden in the browser. Three.js, no build step.
 
-**Live:** https://tulips-4tv5jln3t-aryansingh-8099s-projects.vercel.app
+**Live:** https://tulips-swart.vercel.app
 
 ## What's in it
 
@@ -14,6 +14,9 @@ An interactive 3D tulip garden in the browser. Three.js, no build step.
   orbit, mountain sweep), a free-fly drone, and a third-person walk mode
   following a rigged character.
 - **Pick tulips** by clicking; gather five and tie a bouquet.
+- **Hand control** — hit ✋ Hands and fly the garden with webcam gestures:
+  pinch one hand and drag to steer, pinch both and pull them apart to fly
+  forward. Runs on MediaPipe HandLandmarker, entirely on-device.
 - **Live time of day** driven by your real clock, plus sunrise/noon/sunset/
   night presets, and clear/rain weather with wet-looking petals.
 - **Butterflies** — six hand-drawn species that wander, home in on real
