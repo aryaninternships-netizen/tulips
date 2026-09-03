@@ -67,6 +67,16 @@
     backdrop-filter: blur(6px); }
   .chips button.on { background: #2b2320; color: #fff; }
 
+  #handPanel { position: absolute; right: 24px; bottom: 22px; width: 200px;
+    display: none; border-radius: 12px; overflow: hidden;
+    background: rgba(16,18,26,.72); backdrop-filter: blur(6px);
+    box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+  #handPanel video { width: 200px; height: 150px; object-fit: cover;
+    transform: scaleX(-1); display: block; opacity: .55; }
+  #handPanel canvas { position: absolute; left: 0; top: 0; }
+  #handMsg { padding: 6px 9px; font: 500 .68rem Inter, sans-serif;
+    color: #dfe6f2; text-align: center; }
+
   #fps { position: absolute; left: 24px; bottom: 22px; color: #fff;
     font: 500 .72rem ui-monospace, Menlo, monospace; opacity: .55;
     text-shadow: 0 1px 4px rgba(0,0,0,.6); }
@@ -99,6 +109,7 @@
     <button id="mDrone" class="on">🎬 FPV</button>
     <button id="mFree">🚁 Free</button>
     <button id="mWalk">🚶 Walk</button>
+    <button id="mHands">✋ Hands</button>
   </div>
   <div id="skybar" class="panel">
     <div id="wicon"></div>
@@ -116,6 +127,11 @@
   </div>
   <div id="hint">click a tulip to pluck it</div>
   <div id="fps">– fps</div>
+  <div id="handPanel" class="panel">
+    <video id="handVideo" playsinline muted></video>
+    <canvas id="handCanvas" width="200" height="150"></canvas>
+    <div id="handMsg">starting…</div>
+  </div>
   <div id="basket" class="panel">
     <div id="stems"></div>
     <span id="count">0 tulips picked</span>
@@ -2016,6 +2032,174 @@ function updateGirl(t, dt, moving) {
   girl.rotation.y = yaw + Math.PI;   // faces walking direction
 }
 
+// ---------- hand control: fly the garden with your hands ----------
+// MediaPipe HandLandmarker on the webcam. Gestures:
+//   * PINCH one hand and move it  -> grab the air and steer: left/right turns,
+//     up/down changes altitude (like dragging the world past you)
+//   * PINCH BOTH hands and pull them APART -> fly forward; bring them
+//     together -> fly back. It reads like pulling yourself along a rope.
+//   * OPEN PALM -> let go, glide to a stop
+// Everything is velocity-based and smoothed, because raw landmark positions
+// jitter by a few pixels every frame.
+const hand = {
+  on: false, ready: false, loading: false,
+  lm: null, video: null, canvas: null, ctx: null,
+  vx: 0, vy: 0, vz: 0, vyaw: 0, vpitch: 0,     // smoothed intents
+  anchor: null, twoAnchor: 0, lastT: 0, seen: 0,
+};
+
+window.HAND = hand;                    // debug handle: inspect gesture state
+
+function handHUD(msg) {
+  const el = document.getElementById('handMsg');
+  if (el) el.textContent = msg;
+}
+
+async function enableHands() {
+  if (hand.loading) return;
+  if (hand.on) {                       // toggle off
+    hand.on = false;
+    document.getElementById('handPanel').style.display = 'none';
+    document.getElementById('mHands').classList.remove('on');
+    if (hand.video && hand.video.srcObject) {
+      hand.video.srcObject.getTracks().forEach(t => t.stop());
+      hand.video.srcObject = null;
+    }
+    return;
+  }
+  hand.loading = true;
+  document.getElementById('handPanel').style.display = 'block';
+  handHUD('starting camera…');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: 640, height: 480, facingMode: 'user' }, audio: false });
+    hand.video = document.getElementById('handVideo');
+    hand.video.srcObject = stream;
+    await hand.video.play();
+
+    if (!hand.lm) {
+      handHUD('loading hand model…');
+      const vision = await import(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14');
+      const files = await vision.FilesetResolver.forVisionTasks(
+        'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      hand.lm = await vision.HandLandmarker.createFromOptions(files, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/' +
+            'hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+          delegate: 'GPU',
+        },
+        runningMode: 'VIDEO',
+        numHands: 2,
+      });
+    }
+    hand.canvas = document.getElementById('handCanvas');
+    hand.ctx = hand.canvas.getContext('2d');
+    hand.on = true;
+    hand.ready = true;
+    document.getElementById('mHands').classList.add('on');
+    setMode('free');                   // hands fly the free drone
+    handHUD('pinch to steer · both hands apart to fly');
+  } catch (err) {
+    handHUD('camera blocked: ' + (err && err.name ? err.name : err));
+    console.warn('hand control failed', err);
+  }
+  hand.loading = false;
+}
+
+// distance between two landmarks in normalised coords
+const lmDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+function readHands(t) {
+  if (!hand.on || !hand.lm || !hand.video || hand.video.readyState < 2) return null;
+  let res;
+  try { res = hand.lm.detectForVideo(hand.video, t * 1000); }
+  catch { return null; }
+  if (!res || !res.landmarks || !res.landmarks.length) { hand.seen = 0; return null; }
+  hand.seen = res.landmarks.length;
+
+  const hands = res.landmarks.map(L => {
+    // normalise the pinch by hand size, so it works near or far from the lens
+    const span = lmDist(L[0], L[9]) || 0.001;
+    const pinch = lmDist(L[4], L[8]) / span;
+    return {
+      pinch, pinched: pinch < 0.55,
+      x: L[9].x, y: L[9].y,            // middle-finger knuckle = palm centre
+      L,
+    };
+  });
+  drawHands(hands);
+  return hands;
+}
+
+function drawHands(hands) {
+  const c = hand.ctx, W = hand.canvas.width, H = hand.canvas.height;
+  c.clearRect(0, 0, W, H);
+  for (const h of hands) {
+    c.fillStyle = h.pinched ? '#ffd166' : '#8fd3ff';
+    for (const p of h.L) {
+      c.beginPath();
+      c.arc((1 - p.x) * W, p.y * H, h.pinched ? 3.2 : 2.2, 0, 7);
+      c.fill();
+    }
+    // highlight the pinch pair
+    c.strokeStyle = h.pinched ? '#ffd166' : 'rgba(255,255,255,.35)';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.moveTo((1 - h.L[4].x) * W, h.L[4].y * H);
+    c.lineTo((1 - h.L[8].x) * W, h.L[8].y * H);
+    c.stroke();
+  }
+}
+
+function updateHandControl(t, dt) {
+  if (!hand.on) return;
+  const hands = readHands(t);
+  const pinched = hands ? hands.filter(h => h.pinched) : [];
+
+  let wantYaw = 0, wantPitch = 0, wantUp = 0, wantFwd = 0;
+
+  if (pinched.length >= 2) {
+    // two pinches: the gap between them is a throttle
+    const d = Math.hypot(pinched[0].x - pinched[1].x, pinched[0].y - pinched[1].y);
+    if (!hand.twoAnchor) hand.twoAnchor = d;
+    wantFwd = THREE.MathUtils.clamp((d - hand.twoAnchor) * 6, -1, 1);
+    hand.anchor = null;
+    handHUD(wantFwd > 0.05 ? 'flying forward' :
+            wantFwd < -0.05 ? 'backing up' : 'hold… spread to fly');
+  } else if (pinched.length === 1) {
+    // one pinch: grab the air, drag to steer
+    const h = pinched[0];
+    if (!hand.anchor) hand.anchor = { x: h.x, y: h.y };
+    const dx = h.x - hand.anchor.x;      // camera is mirrored, so +x = right
+    const dy = h.y - hand.anchor.y;
+    wantYaw = THREE.MathUtils.clamp(dx * 3.2, -1, 1);
+    wantUp = THREE.MathUtils.clamp(-dy * 3.2, -1, 1);
+    hand.twoAnchor = 0;
+    handHUD('steering — release to stop');
+  } else {
+    hand.anchor = null;
+    hand.twoAnchor = 0;
+    if (hand.seen) handHUD('pinch to steer · both hands apart to fly');
+    else handHUD('show me your hands');
+  }
+
+  // smooth the intents hard: landmarks jitter every frame
+  const k = Math.min(dt * 5, 1);
+  hand.vyaw += (wantYaw - hand.vyaw) * k;
+  hand.vy += (wantUp - hand.vy) * k;
+  hand.vz += (wantFwd - hand.vz) * k;
+
+  if (mode !== 'free') return;
+  yaw -= hand.vyaw * dt * 1.5;
+  pitch = THREE.MathUtils.clamp(pitch + hand.vpitch * dt, -1.1, 0.9);
+  const fwd = new THREE.Vector3(
+    -Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch),
+    -Math.cos(yaw) * Math.cos(pitch));
+  dronePos.addScaledVector(fwd, hand.vz * 70 * dt);
+  dronePos.y += hand.vy * 40 * dt;
+}
+
 // ---------- camera modes ----------
 let mode = 'drone';
 let yaw = 0, pitch = -0.1;
@@ -2047,7 +2231,7 @@ function setMode(m) {
   document.getElementById('hint').textContent = m === 'walk'
     ? 'WASD to walk · shift to run · drag to look · click tulips to pluck'
     : m === 'free'
-    ? 'drag to look · WASD to fly · Q/E up-down · shift boost'
+    ? 'drag to look · WASD to fly · Q/E up-down · ✋ Hands for gesture control'
     : 'cinematic drone reel · sit back, or drag to nudge';
   if (m === 'walk') { yaw = Math.PI; pitch = -0.05; }
   if (m === 'free') {
@@ -2062,6 +2246,7 @@ function setMode(m) {
 document.getElementById('mDrone').onclick = () => setMode('drone');
 document.getElementById('mFree').onclick = () => setMode('free');
 document.getElementById('mWalk').onclick = () => setMode('walk');
+document.getElementById('mHands').onclick = () => enableHands();
 
 function updateCamera(t, dt) {
   if (mode === 'drone') {
@@ -2341,6 +2526,7 @@ renderer.setAnimationLoop(() => {
   grassTime.value = t;
   grassWind.value = Math.min(windNow, 2.2);
   updateWetness(dt);
+  updateHandControl(t, dt);
   updateCamera(t, dt);
   updateFlyers(dt);
   updateSky();
