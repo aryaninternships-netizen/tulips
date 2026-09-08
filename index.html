@@ -1485,9 +1485,9 @@ let fogMesh = null, fogData = [];
   // Keep the banks BEYOND the treeline (trees live at r 188-470). Sitting
   // inside it turned every distant tree white — that was the "white cast".
   const BANDS = [
-    { n: 70, r0: 480, r1: 640, y0: 8,  y1: 30, s0: 90,  s1: 170 },
-    { n: 60, r0: 560, r1: 780, y0: 26, y1: 70, s0: 130, s1: 240 },
-    { n: 40, r0: 640, r1: 900, y0: 60, y1: 130, s0: 170, s1: 320 },
+    { n: 70, r0: 480, r1: 640, y0: 8,  y1: 30, s0: 60,  s1: 120 },
+    { n: 60, r0: 560, r1: 780, y0: 26, y1: 70, s0: 90,  s1: 160 },
+    { n: 40, r0: 640, r1: 900, y0: 60, y1: 130, s0: 120, s1: 210 },
   ];
   const total = BANDS.reduce((s, b) => s + b.n, 0);
   const quad = new THREE.PlaneGeometry(1, 1);
@@ -1542,7 +1542,7 @@ function updateFog(t, dt, elev) {
     fogMesh.setMatrixAt(i, _fd.matrix);
     // fade out close to the camera so you never fly into a wall
     const dist = Math.hypot(x - cx, y - cy, z - cz);
-    const near = Math.min(Math.max((dist - 40) / 120, 0), 1);
+    const near = Math.min(Math.max((dist - f.w * 0.6 - 30) / 150, 0), 1);
     aa.setX(i, f.base * mood * near);
   }
   fogMesh.instanceMatrix.needsUpdate = true;
