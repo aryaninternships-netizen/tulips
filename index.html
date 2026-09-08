@@ -194,7 +194,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 
 // ---------- scene ----------
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0xcfe6f5, 260, 980);
+scene.fog = new THREE.Fog(0xcfe6f5, 430, 1500);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
 renderer.setSize(innerWidth, innerHeight);
@@ -1075,7 +1075,13 @@ function windTree(mat) {
   // Honda's model: each node continues a MAIN axis (long, near-parallel) and
   // throws off shorter LATERALS. Equal children look like a fractal toy;
   // asymmetric ratios are what make a real tree.
-  function grow(origin, phase, conifer, scale) {
+  function grow(origin, phase, conifer, scale, dead) {
+    // per-tree identity: one hue/value shift for the WHOLE tree, so stands
+    // read as individuals instead of one repeated texture
+    const idHue = (Math.random() - 0.5) * 0.045;
+    const idVal = 0.82 + Math.random() * 0.36;
+    const tint = c => { col.copy(c); col.offsetHSL(idHue, 0, 0);
+                        col.multiplyScalar(idVal); return col; };
     const H = (conifer ? 14 : 11) * scale;
     const rad0 = (conifer ? 0.62 : 0.78) * scale;
     // flared foot: ground radius ~1.6x the trunk, over the lowest few percent
@@ -1085,16 +1091,19 @@ function windTree(mat) {
     push(flare, col.copy(BARK_A).lerp(BARK_B, Math.random()), 0, origin.y, phase);
 
     function axis(base, dir, len, rad, level, roll, heightFrac) {
-      limb(bark, col.copy(BARK_A).lerp(BARK_B, Math.random() * 0.8),
+      limb(bark, dead ? col.setHex(0x7a7166).multiplyScalar(idVal)
+                      : tint(BARK_A).lerp(BARK_B, Math.random() * 0.8),
            base, dir, len, rad, Math.min(level, 3), phase);
       if (level >= TREE_LEVELS) {
-        foliage(_pos.copy(dir).multiplyScalar(len).add(base).clone(),
-                dir, len * 0.95, conifer, phase);
+        if (!dead)
+          foliage(_pos.copy(dir).multiplyScalar(len).add(base).clone(),
+                  dir, len * 0.95, conifer, phase);
         return;
       }
+      if (dead && level >= TREE_LEVELS - 1) return;   // snags end in bare tips
       // foliage rides the second-to-last order too: real crowns are a shell
       // several branch-orders deep, not a pom-pom on a bare stick
-      if (level === TREE_LEVELS - 1) {
+      if (!dead && level === TREE_LEVELS - 1) {
         foliage(_pos.copy(dir).multiplyScalar(len * 0.45).add(base).clone(),
                 dir, len * 0.75, conifer, phase);
         foliage(_pos.copy(dir).multiplyScalar(len * 0.85).add(base).clone(),
@@ -1175,7 +1184,7 @@ function windTree(mat) {
           d.quaternion.setFromUnitVectors(_up, dirF);
           // long and narrow: this is what makes the outline fringed
           d.scale.set(len * 0.30, len, len * 0.30);
-          push(needles, col.copy(NEEDLE_A).lerp(NEEDLE_B,
+          push(needles, tint(NEEDLE_A).lerp(NEEDLE_B,
                0.10 + (1 - f) * 0.45 + Math.random() * 0.3), 2, y, phase);
         }
       }
@@ -1183,7 +1192,7 @@ function windTree(mat) {
       d.position.set(origin.x, origin.y + H * 0.95, origin.z);
       d.quaternion.identity();
       d.scale.set(H * 0.035, H * 0.16, H * 0.035);
-      push(needles, col.copy(NEEDLE_B), 2, origin.y + H * 0.95, phase);
+      push(needles, tint(NEEDLE_B), 2, origin.y + H * 0.95, phase);
     }
     axis(origin.clone(), new THREE.Vector3(
       (Math.random() - 0.5) * 0.05, 1, (Math.random() - 0.5) * 0.05).normalize(),
@@ -1191,23 +1200,40 @@ function windTree(mat) {
   }
 
   const O = new THREE.Vector3();
-  // shelter belt around the field
-  for (let i = 0; i < 90; i++) {
-    const a = (i / 90) * Math.PI * 2 + Math.random() * 0.14;
-    const r = 188 + Math.random() * 20;
-    const x = Math.cos(a) * r, z = Math.sin(a) * r;
-    grow(O.set(x, terrainH(x, z), z).clone(), Math.random() * 6.28,
-         Math.random() < 0.62, 0.75 + Math.random() * 0.6);
+  // Real stands follow a reverse-J size curve: many young trees, few giants.
+  // Regeneration clusters under parents, ~6% are standing dead snags, and
+  // edge trees grow shorter than the interior (wind exposure).
+  const ageScale = () => 0.45 + 1.05 * Math.pow(Math.random(), 2.1);
+  function plant(x, z, edge) {
+    const y = terrainH(x, z);
+    if (y > 95) return;
+    const conifer = Math.random() < 0.66;
+    const dead = Math.random() < 0.06;
+    let sc = ageScale();
+    if (edge) sc *= 0.8;                       // wind-clipped edge trees
+    grow(O.set(x, y, z).clone(), Math.random() * 6.28, conifer, sc, dead);
+    if (sc > 1.0 && Math.random() < 0.5) {     // saplings under a parent
+      const kids = 1 + (Math.random() * 3 | 0);
+      for (let k = 0; k < kids; k++) {
+        const ka = Math.random() * 6.28, kr = 6 + Math.random() * 10;
+        const kx = x + Math.cos(ka) * kr, kz = z + Math.sin(ka) * kr;
+        if (terrainH(kx, kz) > 95) continue;
+        grow(O.set(kx, terrainH(kx, kz), kz).clone(), Math.random() * 6.28,
+             conifer, 0.28 + Math.random() * 0.25, false);
+      }
+    }
   }
-  // groves on the far shore, stopping at the treeline
-  for (let i = 0; i < 110; i++) {
+  // shelter belt around the field
+  for (let i = 0; i < 80; i++) {
+    const a = (i / 80) * Math.PI * 2 + Math.random() * 0.14;
+    const r = 188 + Math.random() * 20;
+    plant(Math.cos(a) * r, Math.sin(a) * r, true);
+  }
+  // groves on the far shore
+  for (let i = 0; i < 90; i++) {
     const a = Math.random() * Math.PI * 2;
     const r = 320 + Math.random() * 150;
-    const x = Math.cos(a) * r, z = Math.sin(a) * r;
-    const y = terrainH(x, z);
-    if (y > 95) continue;
-    grow(O.set(x, y, z).clone(), Math.random() * 6.28,
-         Math.random() < 0.75, 0.6 + Math.random() * 0.7);
+    plant(Math.cos(a) * r, Math.sin(a) * r, false);
   }
   for (const m of [bark, flare, needles, leaves2]) {
     m.instanceMatrix.needsUpdate = true;
@@ -1832,16 +1858,25 @@ const dummy = new THREE.Object3D();
 const tulipData = []; // {x,y,z,scale,plucked,color,ch,idx}
 
 let n = 0;
+// Patchiness: real fields are not uniform — density drifts, edges fray, and
+// stray bulbs come up in the wrong band (they get mixed at lifting time).
+const patchy = (x, z) =>
+  0.5 + 0.30 * Math.sin(x * 0.031 + z * 0.017)
+      + 0.24 * Math.sin(x * 0.011 - z * 0.027 + 2.1);
+const WILD = 6000;                       // loose scatter outside the bands
 outer:
-for (let band = 0; band < 26 && n < COUNT; band++) {
+for (let band = 0; band < 26 && n < COUNT - WILD; band++) {
   const color = PALETTE[band % PALETTE.length];
   // each variety band has its own height character (real cultivars differ)
   const bandH = 0.72 + ((band * 2654435761 >>> 16) % 100) / 100 * 0.55;
-  for (let i = 0; i < 4000 && n < COUNT; i++) {
+  for (let i = 0; i < 5600 && n < COUNT - WILD; i++) {
     // curved bands: rows follow a sine sweep across the field
-    const z = -SIZE / 2 + 14 + band * 14 + (Math.random() - 0.5) * 13;
-    const x = -SIZE / 2 + 10 + (i / 4000) * (SIZE - 20) + (Math.random() - 0.5) * 2.5;
-    const zc = z + 18 * Math.sin(x * 0.015); // curve the band
+    const fray = 10 + 9 * patchy(i, band * 37);          // ragged edges
+    const z = -SIZE / 2 + 14 + band * 14 + (Math.random() - 0.5) * fray;
+    const x = -SIZE / 2 + 10 + (i / 5600) * (SIZE - 20) + (Math.random() - 0.5) * 2.5;
+    let zc = z + 18 * Math.sin(x * 0.015); // curve the band
+    if (Math.random() > 0.30 + patchy(x, zc) * 0.85) continue;  // thin patches
+    if (Math.random() < 0.045) zc += (Math.random() - 0.5) * 55; // stray bulbs
     if (Math.abs(x) > SIZE / 2 - 8 || Math.abs(zc) > SIZE / 2 - 8) continue;
     // keep every bloom on dry land: the square field's corners reach past the
     // lake's inner shore, so clip to a radius inside the water line
@@ -1866,7 +1901,36 @@ for (let band = 0; band < 26 && n < COUNT; band++) {
     ch.stems.setColorAt(idx, _c2);
     ch.leaves.setColorAt(idx, _c2.offsetHSL(0, 0.03, -0.03));
     n++;
-    if (n >= COUNT) break outer;
+    if (n >= COUNT - WILD) break outer;
+  }
+}
+// wild scatter: loose singles and small clumps in the open grass, so the
+// space between bands is inhabited instead of empty
+{
+  let placedWild = 0, guard = 0;
+  while (placedWild < WILD && n < COUNT && guard++ < WILD * 4) {
+    const x = (Math.random() - 0.5) * (SIZE - 18);
+    const zc = (Math.random() - 0.5) * (SIZE - 18);
+    if (Math.hypot(x, zc) > LAKE_IN - 14) continue;
+    if (onPath(x, zc)) continue;
+    if (Math.random() > 0.25 + patchy(x * 1.7, zc * 1.7) * 0.8) continue;
+    const ch = tChunkAt(x, zc);
+    if (ch.heads.count >= chunkCap) continue;
+    const idx = ch.heads.count++;
+    ch.stems.count++; ch.leaves.count++;
+    const y = terrainH(x, zc);
+    const color = PALETTE[(Math.random() * PALETTE.length) | 0];
+    const sc = 0.6 + Math.random() * 0.75;
+    tulipData.push({ x, y, z: zc, scale: sc, rot: Math.random() * 6.28,
+      phase: Math.random() * 6.28, plucked: false, color, ch, idx });
+    _c.copy(color).offsetHSL((Math.random() - 0.5) * 0.03,
+      (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.12);
+    ch.heads.setColorAt(idx, _c);
+    _c2.setHex(0x3f7d36).offsetHSL((Math.random() - 0.5) * 0.03, 0,
+      (Math.random() - 0.5) * 0.08);
+    ch.stems.setColorAt(idx, _c2);
+    ch.leaves.setColorAt(idx, _c2.offsetHSL(0, 0.03, -0.03));
+    n++; placedWild++;
   }
 }
 
