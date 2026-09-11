@@ -38,4 +38,10 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 ## White blink + walk cam (2026-09-11, all three)
 - White blink on phones = adaptive DPR: each renderer.setPixelRatio recreates the buffer and paints one cleared frame of the page bg (#cfe6f5, near white). Now: step only after 2 slow windows (<34) or 6 fast (>58), min 6s between steps, page bg #4a5e66 so any cleared frame is dusk-grey.
 - Phone walk cam: dist +4, side 3.6 (was 2.6). Hint fades (opacity 0) 5s after each setMode on body.mobile.
-- Domain: minionbageecha.in + www bound to Vercel project minions-garden (aryansingh-8099). GoDaddy records needed: A @ 76.76.21.21, CNAME www cname.vercel-dns.com. WHOIS validation pending on user side.
+- Domain: minionbageecha.in LIVE with SSL on Vercel project minions-garden (A @ 76.76.21.21 at GoDaddy, www 308-redirects to bare domain). WHOIS validate still on user.
+- Sunflower v4.1: plant rot for sunflowers is +-0.25 rad only (random yaw was fighting the sun/east yaw, heads faced every way); head scale 0.85; rays 24+20 halfW 0.19/0.17; disc dome halved (was a ball from the side); plaza loop 1700 tries. Hint pill fades after 5 s on every device (user circled it).
+
+## 2026-09-11 late
+- Minions: basket + bouquet + plucking REMOVED (CSS display none on #basket/#bouquetModal, pluckAtNDC returns false, hint text scrubbed). Flowers stay in the ground there.
+- Sunflower v4.1: plant rot near 0 so the shader yaw (sun/east) rules facing; head scale 0.85; whorl() got `tip` opt (0.9 = blunt oblong ligules, NU4 NV3); disc dome halved.
+- Hint pill fades 5s after every setMode on all devices. Bouquet caption per garden (was "Tulipa" in the forks).
