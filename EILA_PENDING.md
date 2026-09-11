@@ -52,3 +52,7 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 - 'unsafe-inline' stays because the whole app is one inline module + importmap; a nonce needs a build step. Vercel preview deployments log ONE CSP violation for vercel.live feedback.js: preview only, ignore.
 - Verified MediaPipe wasm + model load under the CSP via console import on the preview.
 - minions index.html has description/og/theme-color meta.
+
+## Start screen (2026-09-11, all three)
+- #intro overlay (z 20, blur over the live reel), body.intro hides #hud. Buttons data-m drone/free/walk/hands disabled until introReady() (called when the girl GLB resolves or fails, plus a 15s failsafe). 70% bar after fitViewport(). Hands button = setMode('free') + enableHands() inside the click = valid user gesture for the camera prompt.
+- Copy per garden in the HTML; CSS/JS identical. Grid 4 cols, 2 cols under 560px, compact under 460px tall.
