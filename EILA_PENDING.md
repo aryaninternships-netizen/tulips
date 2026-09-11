@@ -34,3 +34,8 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 - MOBILE is now `let`; fitViewport re-evaluates (pointer:coarse || width<820) and toggles body.mobile, DPR cap, setMode(mode) for the hint. Instance budgets stay from load.
 - Landscape (max-height 460): hint at top centre, max-width 46vw; was overlapping the basket.
 - Black dome the user saw once at the lake shore: not reproduced from any angle/time on either render path; no NaN in position/normal/color of 467 meshes. Parked.
+
+## White blink + walk cam (2026-09-11, all three)
+- White blink on phones = adaptive DPR: each renderer.setPixelRatio recreates the buffer and paints one cleared frame of the page bg (#cfe6f5, near white). Now: step only after 2 slow windows (<34) or 6 fast (>58), min 6s between steps, page bg #4a5e66 so any cleared frame is dusk-grey.
+- Phone walk cam: dist +4, side 3.6 (was 2.6). Hint fades (opacity 0) 5s after each setMode on body.mobile.
+- Domain: minionbageecha.in + www bound to Vercel project minions-garden (aryansingh-8099). GoDaddy records needed: A @ 76.76.21.21, CNAME www cname.vercel-dns.com. WHOIS validation pending on user side.
