@@ -9,3 +9,17 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 - Compact HUD (desktop too): mode buttons icon-only, label <span> shown only on .on; time+weather chips hidden inside #skybar, sun icon toggles .open, any chip click folds it.
 - launch.json now has khushi-garden (8644) and minions-garden (8645).
 - Browser-pane gotcha: synthetic PointerEvents throw on setPointerCapture (no active pointer); guarded with try/catch, console error is from tests not real touches.
+
+## Mobile perf pass (2026-09-11, all three)
+- Phones skip EffectComposer entirely (renderer.render direct; bloom = 4 fullscreen passes). Desktop unchanged.
+- Adaptive pixel ratio on mobile: fps<38 steps DPR -0.1 (floor 0.6), fps>56 steps +0.05 (cap 1.0), evaluated every 0.5s in the fps block.
+- Mobile budgets: fog BANDS n x0.45, BFLY 40, RAIN_N 1400, webcam 320x240, hand detection every other frame (hand.last reused).
+- powerPreference high-performance on the renderer.
+
+## Sunflower v4 (2026-09-11, minions only)
+- Reference: Wikipedia Common sunflower. Rough hairy stem 2-4 cm on 2-3 m; leaves broad, coarsely toothed, heart-shaped, alternate, lowest largest; head 7.5-12.5 cm wild (garden cultivars bigger); MATURE HEADS FACE EAST FIXED, only buds track the sun (Atamian 2016).
+- sunStemG(h, r): ridged 3-ring stem, 5 alternate cordate leaves at golden angle on petioles, drooping, largest low. Stem greens dark (0.13,0.28,0.10).
+- Head: 21+17 ligules halfW 0.16/0.14, disc 6 rings seg 28, colours 3-4x darker than they should look (noon sun + specular lift them; mid-brown rendered as GOLD in v3 close-ups, that was the bug). Sunflower bloomMat shininess 5 specular 0x0c0c0c. Green receptacle disc + 14 phyllaries behind. g.scale 0.62, rotateX -1.0 (nods 55 deg), translate (0,0.07,-0.12) so the receptacle sits on the stem top.
+- Shader: age = clamp((instance scale - 1.35)/0.3): young mix to uSunYaw, mature to uEastYaw (0.9 rad, the garden's east).
+- Drifting petals: radial-gradient CanvasTexture sprite, size 0.22 (untextured Points drew as pink squares).
+- Debug handles now in all three: window.CAM, window.DBG {dronePos, look(yaw,pitch)}, minions window.TD (tulipData). Teleport: mFree click, DBG.dronePos.set, DBG.look. yaw -PI/2 looks +x, PI/2 looks -x, 0 looks -z, PI looks +z.
