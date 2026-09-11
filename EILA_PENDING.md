@@ -23,3 +23,8 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 - Shader: age = clamp((instance scale - 1.35)/0.3): young mix to uSunYaw, mature to uEastYaw (0.9 rad, the garden's east).
 - Drifting petals: radial-gradient CanvasTexture sprite, size 0.22 (untextured Points drew as pink squares).
 - Debug handles now in all three: window.CAM, window.DBG {dronePos, look(yaw,pitch)}, minions window.TD (tulipData). Teleport: mFree click, DBG.dronePos.set, DBG.look. yaw -PI/2 looks +x, PI/2 looks -x, 0 looks -z, PI looks +z.
+
+## White cast, real root cause (2026-09-11, all three)
+- Earlier log claimed scene.fog far 980. Wrong: updateSky overwrote it EVERY FRAME with `far = rain ? 260 : 420`. World is 800 wide, treeline r 480+, so trees rendered at 100% fog colour (pale sky stop) in front of the ridge whose material has fog:false and stayed green: white tree cutouts on green hills, at ground level and from the drone.
+- Fix: updateSky near 220 / far 1100 (rain 60 / 300). Verified at noon from ground and 70u drone in the pane.
+- Lesson: grep for every writer of a value before declaring it fixed; the init line is not the value.
