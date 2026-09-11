@@ -45,3 +45,10 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 - Minions: basket + bouquet + plucking REMOVED (CSS display none on #basket/#bouquetModal, pluckAtNDC returns false, hint text scrubbed). Flowers stay in the ground there.
 - Sunflower v4.1: plant rot near 0 so the shader yaw (sun/east) rules facing; head scale 0.85; whorl() got `tip` opt (0.9 = blunt oblong ligules, NU4 NV3); disc dome halved.
 - Hint pill fades 5s after every setMode on all devices. Bouquet caption per garden (was "Tulipa" in the forks).
+
+## Security headers (2026-09-11, all three, vercel.json)
+- CSP: default-src self; script-src self 'unsafe-inline' 'wasm-unsafe-eval' + unpkg, jsdelivr, cdnjs; style self inline fonts.googleapis; font self data gstatic; img self data blob; media self blob; connect self + unpkg jsdelivr cdnjs storage.googleapis.com (mediapipe model); worker/child self blob; object none; base-uri self; form-action self; frame-ancestors none; upgrade-insecure-requests.
+- HSTS 2y preload, nosniff, X-Frame DENY, Referrer strict-origin-when-cross-origin, Permissions-Policy camera=(self) only, COOP same-origin.
+- 'unsafe-inline' stays because the whole app is one inline module + importmap; a nonce needs a build step. Vercel preview deployments log ONE CSP violation for vercel.live feedback.js: preview only, ignore.
+- Verified MediaPipe wasm + model load under the CSP via console import on the preview.
+- minions index.html has description/og/theme-color meta.
