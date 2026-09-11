@@ -28,3 +28,9 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 - Earlier log claimed scene.fog far 980. Wrong: updateSky overwrote it EVERY FRAME with `far = rain ? 260 : 420`. World is 800 wide, treeline r 480+, so trees rendered at 100% fog colour (pale sky stop) in front of the ridge whose material has fog:false and stayed green: white tree cutouts on green hills, at ground level and from the drone.
 - Fix: updateSky near 220 / far 1100 (rain 60 / 300). Verified at noon from ground and 70u drone in the pane.
 - Lesson: grep for every writer of a value before declaring it fixed; the init line is not the value.
+
+## Full screen + reactive mobile flag (2026-09-11, all three)
+- #fsBtn under the sun icon: requestFullscreen on documentElement, screen.orientation.lock('landscape') on phones, button becomes ✕ in fullscreen (fullscreenchange), hidden on iOS Safari (no element fullscreen API).
+- MOBILE is now `let`; fitViewport re-evaluates (pointer:coarse || width<820) and toggles body.mobile, DPR cap, setMode(mode) for the hint. Instance budgets stay from load.
+- Landscape (max-height 460): hint at top centre, max-width 46vw; was overlapping the basket.
+- Black dome the user saw once at the lake shore: not reproduced from any angle/time on either render path; no NaN in position/normal/color of 467 meshes. Parked.
