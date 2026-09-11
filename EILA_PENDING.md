@@ -56,3 +56,4 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 ## Start screen (2026-09-11, all three)
 - #intro overlay (z 20, blur over the live reel), body.intro hides #hud. Buttons data-m drone/free/walk/hands disabled until introReady() (called when the girl GLB resolves or fails, plus a 15s failsafe). 70% bar after fitViewport(). Hands button = setMode('free') + enableHands() inside the click = valid user gesture for the camera prompt.
 - Copy per garden in the HTML; CSS/JS identical. Grid 4 cols, 2 cols under 560px, compact under 460px tall.
+- Sunflower v4.2: rays 17+14, halfW .105/.095, len .78/.68, tip .86 (were 24+20 wide blunt = solid yellow band around a black cup). Disc RING radii x0.8 (max .37), colours warmer (centre .11/.06/.03, rim .85/.60/.10). Head scale .78. Plaza loop 1000 tries (was 1700). Lesson: distinct countable petals matter more than petal count fidelity.
