@@ -60,3 +60,9 @@ When /Volumes/EILA is back: rsync ~/tulips, ~/khushi-garden, ~/minions-garden (e
 - Start screen v2: liquid-glass .card (blur 26 saturate 1.7, inset top highlight, animated sheen ::before), overlay only 10-34% dark so the reel shows, sunrise chip clicked via setTimeout 0 while intro is up, live chip on enter. .about paragraph per garden. Tagline "a digital interactive garden containing these flowers".
 - HARD RULE (memory gardens_no_crosslink): the three gardens never link to each other. A "more gardens" row existed for ~20 min and was removed.
 - Start screen v3: four mode buttons replaced by one 'Explore garden' pill (enters drone reel on live clock). Modes live in the HUD only.
+
+## Start screen v4, editorial + calligraphy (2026-09-11 evening)
+- Card: left-aligned, eyebrow / h1 / italic Fraunces deck / hr / prose / flower line / "Explore the garden →" pill / footnote / 1px loader hairline at the card bottom. Fraunces link now ital,opsz,wght@0,9..144,400..600;1,... Copy is per garden, written in plain human voice (no chips, no monospace status).
+- Minions title = "Minion" (Fraunces, letters in <b>) + inline SVG "बगीचा": glyph outlines shaped with uharfbuzz + fontTools from Kalam-Bold (pip --user --break-system-packages), viewBox -40 -1080 3120 1420, plus two hand-authored swash paths (underline loop, headline curl). Path data kept at minions-garden/assets/bageecha_paths.txt. CSS: .hiw height 1.28em, margin-bottom -.38em (baseline sits 24% up the box).
+- GSAP 3.12.5 from cdnjs (CSP already allows). Timeline: eyebrow → letters rise (rotateX) → glyph strokes draw (dashoffset) → gold fill → swashes → deck/body/button stagger → looping soft gold drop-shadow. No GSAP = CSS default shows the finished title.
+- HUD title "Minion बगीचा" uses Rozha One (Google) for the Hindi span. Tab title "Minion Bageecha".

@@ -160,6 +160,7 @@
     font-size: clamp(1.05rem, 3vw, 1.3rem); line-height: 1.3; color: #ffe1b8; }
   #intro hr { border: 0; height: 1px; background: rgba(255,255,255,.16); margin: 24px 0 20px; }
   #intro .body { font: 400 .92rem/1.62 Inter, sans-serif; color: rgba(247,242,234,.86); }
+  #intro .body.short { display: none; }
   #intro .flowers { margin-top: 18px; font: 400 .8rem/1.6 Inter, sans-serif; letter-spacing: .01em;
     color: rgba(247,242,234,.6); }
   #intro .enter { margin-top: 30px; display: flex; align-items: center; gap: 18px; }
@@ -179,11 +180,16 @@
   body.intro #hud { opacity: 0; pointer-events: none; }
   #hud { transition: opacity .6s; }
   @media (max-width: 560px) {
-    #intro { padding: 14px; align-items: end; }
-    #intro .card { padding: 28px 24px 24px; border-radius: 20px; }
-    #intro .bar { left: 24px; right: 24px; }
-    #intro hr { margin: 18px 0 14px; }
-    #intro .body { font-size: .88rem; }
+    /* phones: centred, and the short copy only */
+    #intro { padding: 14px; }
+    #intro .card { padding: 30px 22px 24px; border-radius: 20px; text-align: center; }
+    #intro .bar { left: 22px; right: 22px; }
+    #intro h1.calli { justify-content: center; }
+    #intro hr { margin: 18px auto 14px; width: 48px; }
+    #intro .body.long, #intro .flowers { display: none; }
+    #intro .body.short { display: block; font-size: .9rem; }
+    #intro .enter { justify-content: center; flex-direction: column; gap: 10px; margin-top: 24px; }
+    #intro .foot { margin-top: 18px; }
   }
   @media (max-height: 460px) {
     #intro .card { padding: 18px 24px 16px; width: min(640px, 100%); }
@@ -270,7 +276,8 @@
     <h1>Tulipa Garden</h1>
     <div class="deck">Ninety-two thousand tulips, and a lane to walk between them.</div>
     <hr>
-    <p class="body">Drifts the way Keukenhof plants them, over ground that rolls. Fog in the low ground at dawn, six kinds of butterfly that actually land, birds crossing high. Walk the lanes, or fly. Pick a few, tie a bouquet. The sky keeps your local time.</p>
+    <p class="body long">Drifts the way Keukenhof plants them, over ground that rolls. Fog in the low ground at dawn, six kinds of butterfly that actually land, birds crossing high. Walk the lanes, or fly. Pick a few, tie a bouquet. The sky keeps your local time.</p>
+    <p class="body short">Drifts of tulips over rolling ground, fog at dawn, butterflies that land. Walk the lanes or fly. Pick a few, tie a bouquet.</p>
     <div class="flowers">Tulips · Butterflies · Birds · Valley fog · A lake · Rain, if it is raining</div>
     <div class="enter">
       <button data-m="drone" disabled>Explore the garden <i>→</i></button>
