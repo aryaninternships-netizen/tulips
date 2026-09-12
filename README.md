@@ -1,4 +1,4 @@
-# Tulipa Garden
+# Kismis ka बगीचा
 
 An interactive 3D tulip garden in the browser. Three.js, no build step.
 
