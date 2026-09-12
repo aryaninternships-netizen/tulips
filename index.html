@@ -152,9 +152,7 @@
     backdrop-filter: blur(28px) saturate(1.4); -webkit-backdrop-filter: blur(28px) saturate(1.4);
     border: 1px solid rgba(255,255,255,.16);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.28), 0 40px 100px rgba(0,0,0,.45); }
-  #intro .eyebrow { font: 500 .66rem Inter, sans-serif; letter-spacing: .2em; text-transform: uppercase;
-    opacity: .58; }
-  #intro h1 { margin-top: 14px; font-family: Fraunces, serif; font-weight: 500; letter-spacing: -.02em;
+  #intro h1 { margin-top: 0; font-family: Fraunces, serif; font-weight: 500; letter-spacing: -.02em;
     font-size: clamp(2.5rem, 7vw, 3.7rem); line-height: .98; }
   #intro .deck { margin-top: 14px; font-family: Fraunces, serif; font-style: italic; font-weight: 400;
     font-size: clamp(1.05rem, 3vw, 1.3rem); line-height: 1.3; color: #ffe1b8; }
@@ -286,7 +284,6 @@
 <div id="barTop" class="bar"></div><div id="barBot" class="bar"></div>
 <div id="intro">
   <div class="card">
-    <div class="eyebrow">For Kismis · 20 September</div>
     <h1 class="calli"><span class="en"><b>K</b><b>i</b><b>s</b><b>m</b><b>i</b><b>s</b></span><span class="ka">ka</span>
     <svg class="hiw" viewBox="-40 -1080 3120 1420" aria-label="बगीचा" role="img">
       <defs><linearGradient id="inkG" x1="0" x2="1"><stop offset="0" stop-color="#ffe1b8"/><stop offset=".5" stop-color="#f7c826"/><stop offset="1" stop-color="#ffd27a"/></linearGradient></defs>
@@ -374,8 +371,7 @@ addEventListener('DOMContentLoaded', () => {
   const prep = p => { const L = p.getTotalLength(); p.style.strokeDasharray = L; p.style.strokeDashoffset = L; return L; };
   glyphs.forEach(prep); sw.forEach(prep);
   const tl = gsap.timeline({ defaults: { ease: 'power2.out' }, delay: .35 });
-  tl.from('#intro .eyebrow', { opacity: 0, y: 8, duration: .6 })
-    .from('#intro h1 .en b', { opacity: 0, y: 26, rotateX: -40, duration: .7, stagger: .06, ease: 'power3.out' }, '-=.3')
+  tl.from('#intro h1 .en b', { opacity: 0, y: 26, rotateX: -40, duration: .7, stagger: .06, ease: 'power3.out' })
     .to(glyphs, { strokeDashoffset: 0, duration: 1.1, stagger: .28, ease: 'power1.inOut' }, '-=.2')
     .to(glyphs, { fillOpacity: 1, duration: .6, stagger: .12 }, '-=.9')
     .to(sw, { strokeDashoffset: 0, duration: .9, stagger: .25, ease: 'power2.inOut' }, '-=.4')
@@ -1928,8 +1924,12 @@ const PALETTE = [0xd42a2a, 0xf28c1e, 0xf7d21e, 0xe85fa0, 0x8e3fb5,
                  0xfdf6ec, 0x3c1030, 0xff6b6b].map(c => new THREE.Color(c));
 
 // geometry: real tulip cup — 6 curved petals in two whorls (ref: garden photos)
-function buildTulipHead() {
-  const NU = 5, NV = 3;               // grid per petal (vertex budget at 75k)
+function buildTulipHead(lod) {
+  // lod: undefined = full detail. A tulip more than ~55u away is a dozen pixels
+  // tall, so the far version drops the petal grid and the throat hardware that
+  // nobody can resolve at that size. 227 tris -> 72.
+  const far = lod === 'far' || lod === 'tiny', tiny = lod === 'tiny';
+  const NU = tiny ? 2 : far ? 3 : 5, NV = tiny ? 1 : far ? 2 : 3;   // grid per petal
   const positions = [], colors = [], indices = [];
   let vertBase = 0;
   const petals = [];
@@ -1971,7 +1971,10 @@ function buildTulipHead() {
   // Inner cup: a smooth surface of revolution tucked just inside the tepals,
   // pale at the throat and deepening toward the rim. A flat fan read as an
   // ugly faceted bowl close up, so this is built as stacked rings.
-  const CS = 8;                        // segments per ring
+  const CS = far ? 5 : 8;              // segments per ring
+  // beyond ~150u a tulip is about seven pixels tall: the throat inside the
+  // tepals cannot be resolved at all, so the far-far version is petals only
+  if (!tiny) {
   const cupProfile = [                 // [y, radius]
     [0.03, 0.05], [0.45, 0.38], [1.10, 0.52],
   ];
@@ -1993,7 +1996,9 @@ function buildTulipHead() {
       indices.push(a, b, a + 1, b, b + 1, a + 1);
     }
   vertBase += cupProfile.length * (CS + 1);
+  }
   // pistil: short green column, capped, with six dark anthers around it
+  if (!far) {
   const pistilStart = vertBase;
   for (let r = 0; r < 2; r++) {
     const py = r ? 0.46 : 0.05, pr = r ? 0.055 : 0.085;
@@ -2018,6 +2023,7 @@ function buildTulipHead() {
     indices.push(base, base + 1, base + 2);
     vertBase += 3;
   }
+  }
 
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
@@ -2028,6 +2034,8 @@ function buildTulipHead() {
   return g;
 }
 const headGeo = buildTulipHead();
+const headGeoFar  = buildTulipHead('far');    // same silhouette, 92 tris
+const headGeoTiny = buildTulipHead('tiny');   // petals only, 24 tris
 const stemGeo = new THREE.CylinderGeometry(0.07, 0.1, 2.2, 6);
 stemGeo.translate(0, 1.1, 0);
 const leafGeo = new THREE.ConeGeometry(0.16, 1.3, 4);
@@ -2060,7 +2068,8 @@ for (let cz = 0; cz < TCH; cz++)
       scene.add(m);
       return m;
     };
-    tChunks.push({ heads: mk(headGeo, headMat), stems: mk(stemGeo, stemMat),
+    tChunks.push({ cx: ccx, cz: ccz,
+                   heads: mk(headGeo, headMat), stems: mk(stemGeo, stemMat),
                    leaves: mk(leafGeo, leafMat) });
   }
 const tChunkAt = (x, z) => {
@@ -3088,6 +3097,7 @@ if (window.visualViewport) visualViewport.addEventListener('resize', fitViewport
 if (screen.orientation) screen.orientation.addEventListener('change', () => setTimeout(fitViewport, 150));
 fitViewport();
 window.CAM = camera;                   // debug handle
+window.R = renderer; window.SCENE = scene;   // debug: profiling and captures
 { // full screen: one tap in, the same button turns into a cross to leave.
   // iOS Safari has no element fullscreen, so the button hides itself there.
   const el = document.documentElement, b = document.getElementById('fsBtn');
@@ -3134,9 +3144,26 @@ function updateWetness(dt) {
 const fpsEl = document.getElementById('fps');
 let fpsFrames = 0, fpsLast = 0;
 const adapt = { slow: 0, fast: 0, last: 0 };
+// Swap each tulip chunk between the detailed and the far head. Distance is
+// measured to the chunk centre, with the chunk's own half-diagonal added, so a
+// chunk only drops detail once all of it is past the line. Every 12th frame is
+// plenty: a chunk is 57u across and nobody crosses that in 200ms.
+const LOD_NEAR = 60, LOD_MID = 150, tHalf = TCHUNK * 0.71;
+let lodTick = 0;
+function updateTulipLOD() {
+  if (lodTick++ % 12) return;
+  const cx = camera.position.x, cz = camera.position.z;
+  for (const c of tChunks) {
+    const d = Math.hypot(c.cx - cx, c.cz - cz) - tHalf;
+    const want = d < LOD_NEAR ? headGeo : d < LOD_MID ? headGeoFar : headGeoTiny;
+    if (c.heads.geometry !== want) c.heads.geometry = want;
+  }
+}
+
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), 0.05);
   const t = clock.elapsedTime;
+  updateTulipLOD();
   windNow = windAt(t);
   grassTime.value = t;
   grassWind.value = Math.min(windNow, 2.2);
