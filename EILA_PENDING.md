@@ -172,3 +172,20 @@ Camera helper that made this findable (paste in console):
 CAMERA AIMING (this cost time too): camera forward is (cos p * sin yaw, sin p, cos p * cos yaw),
 so yaw = atan2(d.x, d.z) and pitch = asin(d.y). The `fwd` vector in updateCamera's WASD code is the
 horizontal NEGATIVE of this - do not copy it for aiming. Confirm with head.project(CAM) -> ndc 0,0.
+
+## Kismis ka बगीचा (was Tulipa Garden) - rename + perf (2026-09-12)
+- Renamed everywhere: tab title, intro headline, HUD brand, varieties.html, README. The botanical
+  names on varieties.html (Tulipa x triumph etc.) stay: Tulipa is the GENUS, not the site name.
+- Headline reuses the Minion बगीचा treatment: Kalam-shaped SVG paths + GSAP ink-on, plus a small
+  italic "ka". Rozha One added to the font link for the HUD brand and varieties heading.
+- Intro is a birthday greeting for Kismis, 20 September, from RedMantis. No tulip count in the copy.
+- Pluck/bouquet removed here too (CSS display none + pluckAtNDC returns false + copy scrubbed).
+- PERF, the real bottleneck: ONE tulip head was 227 tris x 92,000 = 20.9M of a 26.6M-triangle
+  scene (79%). buildTulipHead(lod) now takes 'far' (NU3 NV2, CS5, no pistil/anthers = 92 tris) and
+  'tiny' (NU2 NV1, petals only, no inner cup = 24 tris). Each of the 49 tulip chunks swaps
+  c.heads.geometry by distance to its centre minus its half-diagonal: <60u full, <150u far, else
+  tiny. Checked every 12th frame. Instance matrices/colours are per-instance so the swap is free.
+  Wide drone view: 26.57M -> 9.85M tris, 3.73ms -> 1.59ms. Eye level: 0.37ms. No visible change
+  (at 150u a tulip is ~7px tall). window.R/SCENE now exposed in tulips for profiling.
+- Profiling recipe: R.info.reset(); R.render(SCENE,CAM); read R.info.render.triangles; then time
+  25x R.render + gl.finish(). Group meshes by geometry.index.count/3 to find the real hog.
