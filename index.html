@@ -255,6 +255,8 @@
     body.mobile #alt { bottom: 12px; }
     body.mobile #alt button { width: 44px; height: 44px; }
   }
+  /* the flowers stay in the ground here: no basket, no bouquet */
+  #basket, #bouquetModal { display: none !important; }
   #bouquetModal { position: fixed; inset: 0; display: none; place-items: center;
     background: rgba(30,20,15,.55); backdrop-filter: blur(4px); }
   #bouquetModal .box { background: #faf6ef; border-radius: 20px; padding: 36px 44px;
@@ -276,8 +278,8 @@
     <h1>Tulipa Garden</h1>
     <div class="deck">Ninety-two thousand tulips, and a lane to walk between them.</div>
     <hr>
-    <p class="body long">Drifts the way Keukenhof plants them, over ground that rolls. Fog in the low ground at dawn, six kinds of butterfly that actually land, birds crossing high. Walk the lanes, or fly. Pick a few, tie a bouquet. The sky keeps your local time.</p>
-    <p class="body short">Drifts of tulips over rolling ground, fog at dawn, butterflies that land. Walk the lanes or fly. Pick a few, tie a bouquet.</p>
+    <p class="body long">Drifts the way Keukenhof plants them, over ground that rolls. Fog in the low ground at dawn, six kinds of butterfly that actually land, birds crossing high. Walk the lanes, or fly. The sky keeps your local time.</p>
+    <p class="body short">Drifts of tulips over rolling ground, fog at dawn, butterflies that land. Walk the lanes or fly.</p>
     <div class="flowers">Tulips · Butterflies · Birds · Valley fog · A lake · Rain, if it is raining</div>
     <div class="enter">
       <button data-m="drone" disabled>Explore the garden <i>→</i></button>
@@ -313,7 +315,7 @@
       <button data-w="rain">🌧 Rain</button>
     </div>
   </div>
-  <div id="hint">click a tulip to pluck it</div>
+  <div id="hint">wander the drifts</div>
   <div id="fps">– fps</div>
   <div id="handCursor"></div>
   <div id="handPanel" class="panel">
@@ -2410,7 +2412,7 @@ async function enableHands() {
     hand.ready = true;
     document.getElementById('mHands').classList.add('on');
     setMode('free');                   // hands fly the free drone
-    handHUD('pinch-drag steers · push/pull flies · tap-pinch plucks · 👍 turbo · fist stops');
+    handHUD('pinch-drag steers · push/pull flies · 👍 turbo · fist stops');
   } catch (err) {
     handHUD('camera blocked: ' + (err && err.name ? err.name : err));
     console.warn('hand control failed', err);
@@ -2593,7 +2595,7 @@ function updateHandControl(t, dt) {
     hand.twoAnchor = null;
     if (anyThumb) { handHUD('turbo!'); handBadge('turbo'); }
     else if (hand.seen) {
-      handHUD('pinch-drag steers · push/pull flies · tap-pinch plucks · 👍 turbo · fist stops');
+      handHUD('pinch-drag steers · push/pull flies · 👍 turbo · fist stops');
       handBadge(hands[0].pinch < 0.8 ? 'point' : 'open');
     } else { handHUD('show me your hands'); handBadge('none'); }
   }
@@ -2696,7 +2698,7 @@ function setMode(m) {
   document.getElementById('mFree').classList.toggle('on', m === 'free');
   document.getElementById('mWalk').classList.toggle('on', m === 'walk');
   document.getElementById('hint').textContent = m === 'walk'
-    ? 'WASD to walk · shift to run · drag to look · click tulips to pluck'
+    ? 'WASD to walk · shift to run · drag to look'
     : m === 'free'
     ? 'drag to look · WASD to fly · Q/E up-down · ✋ Hands for gesture control'
     : 'cinematic drone reel · sit back, or drag to nudge';
@@ -2713,7 +2715,7 @@ function setMode(m) {
   { const h = document.getElementById('hint'); h.classList.remove('gone');
     clearTimeout(h._t); h._t = setTimeout(() => h.classList.add('gone'), 5000); }
   if (MOBILE) document.getElementById('hint').textContent = m === 'walk'
-    ? 'stick walks (push to edge to run) · drag to look · tap a bloom to pluck'
+    ? 'stick walks (push to edge to run) · drag to look'
     : m === 'free' ? 'stick flies · ▲▼ altitude · drag to look · ✋ Hands works too'
     : 'cinematic reel · tap Free or Walk to take over';
 }
@@ -2866,6 +2868,7 @@ const picked = []; // colors
 const flyers = []; // plucked tulip flying to camera
 
 function pluckAtNDC(nx, ny) {
+  return false;                        // plucking disabled in this garden
   const m = new THREE.Vector2(nx, ny);
   ray.setFromCamera(m, camera);
   // forgiving pick: nearest unplucked tulip head to the click ray
