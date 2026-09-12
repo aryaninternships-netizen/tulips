@@ -189,3 +189,8 @@ horizontal NEGATIVE of this - do not copy it for aiming. Confirm with head.proje
   (at 150u a tulip is ~7px tall). window.R/SCENE now exposed in tulips for profiling.
 - Profiling recipe: R.info.reset(); R.render(SCENE,CAM); read R.info.render.triangles; then time
   25x R.render + gl.finish(). Group meshes by geometry.index.count/3 to find the real hog.
+- Hosting moved (2026-09-12): ~/tulips now deploys to the aryaninternships-netizen Vercel account,
+  project "kismis-ka-bageecha" prj_2ET7wDImVfvPDKxeREXMALE0qLmm / team_wWV3CyrH9ojFNXCEnvPFcdN5.
+  Domain redmantis.in + www attached and verified. deploy.sh added (Keychain token, same pattern as
+  minions). The OLD project "tulips" on aryansingh-8099 still holds tulips-swart.vercel.app and is
+  now a frozen stale copy: delete it once redmantis.in is confirmed working.
